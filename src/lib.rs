@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::path::Path;
 
-use reqwest::blocking::get;
+use reqwest::{get, header, Client, StatusCode};
 use scraper::{Html, Selector};
 
 const TRIM_CHARS: [char; 3] = ['[', '+', ']'];
+const GET_USERS_PROFILE_API: &str = "https://slack.com/api/users.profile.get";
+const SET_USERS_PROFILE_API: &str = "https://slack.com/api/users.profile.set";
 
+// TODO: impl でコンストラクタとして生成するようにしてもいいかも
 #[derive(Debug)]
 pub struct Forecast {
     place: String,
@@ -17,10 +21,10 @@ pub struct Forecast {
     low_temp_diff: i16,
 }
 
-pub fn get_forecast(url: &str) -> Result<Option<Forecast>, Box<dyn std::error::Error>> {
-    let res = get(url)?;
+pub async fn get_forecast(url: &str) -> Result<Option<Forecast>, Box<dyn std::error::Error>> {
+    let res = get(url).await?;
     match res.status().is_success() {
-        true => Ok(parse_forecast(&*res.text()?).into()),
+        true => Ok(parse_forecast(&*res.text().await?).into()),
         false => Ok(None),
     }
 }
@@ -83,6 +87,58 @@ fn get_stem(path: &str) -> String {
         .to_str()
         .unwrap()
         .to_string()
+}
+
+struct JsonBody {
+    profile: Profile,
+}
+
+struct Profile {
+    status_emoji: String,
+    status_text: String,
+}
+
+pub async fn get_slack_status(
+    token: &str,
+) -> Result<(StatusCode, String), Box<dyn std::error::Error>> {
+    let bearer_token = format!("Bearer {}", token);
+    let client = Client::builder().build()?;
+    let res = client
+        .get(GET_USERS_PROFILE_API)
+        .header(header::AUTHORIZATION, bearer_token)
+        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .send()
+        .await?;
+
+    let status = res.status();
+    let body = res.text().await?;
+    Ok((status, body))
+}
+
+pub async fn update_slack_status(
+    token: &str,
+    emoji: &str,
+    text: &str,
+) -> Result<(StatusCode, String), Box<dyn std::error::Error>> {
+    let bearer_token = format!("Bearer {}", token);
+    let mut profile = HashMap::new();
+    profile.insert("status_emoji", emoji);
+    profile.insert("status_text", text);
+    let mut map = HashMap::new();
+    map.insert("profile", profile);
+
+    let client = Client::builder().build()?;
+    let res = client
+        .post(SET_USERS_PROFILE_API)
+        .header(header::AUTHORIZATION, bearer_token)
+        .header(header::CONTENT_TYPE, "application/json; charset=utf-8")
+        .json(&map)
+        .send()
+        .await?;
+
+    let status = res.status();
+    let body = res.text().await?;
+    Ok((status, body))
 }
 
 #[cfg(test)]
