@@ -1049,7 +1049,6 @@ dependencies = [
  "pretty_assertions",
  "reqwest",
  "scraper",
- "serde_json",
  "tokio",
 ]
 
