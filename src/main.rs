@@ -3,7 +3,8 @@ extern crate clap;
 extern crate log;
 
 use clap::{App, Arg};
-use rusty_slack_weather_status::{get_forecast, update_slack_status};
+use rusty_slack_weather_status::forecast::TenkiJpForecast;
+use rusty_slack_weather_status::slack::update_slack_status;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,11 +31,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .get_matches();
 
-    let tenkijp_url = matches.value_of("URL").unwrap();
-    info!("tenki.jp URL: {}", tenkijp_url);
-    let forecast = get_forecast(tenkijp_url).await?;
+    let tenki_jp_url = matches.value_of("URL").unwrap();
+    info!("tenki.jp URL: {}", tenki_jp_url);
+    let tenki_jp_forecast = TenkiJpForecast::get(tenki_jp_url).await?;
+    let forecast = tenki_jp_forecast.parse()?;
+
+    println!("{:?}", forecast);
 
     let token = matches.value_of("SLACK_TOKEN").unwrap();
-    let (slack_result, res_body) = update_slack_status(token, ":sunny:", "abc").await?;
+    let (slack_result, res_body) = update_slack_status(token, ":sunny:", &forecast.weather).await?;
     Ok(())
 }
