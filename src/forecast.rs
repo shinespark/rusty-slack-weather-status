@@ -1,6 +1,8 @@
+use std::fmt::{self, Display, Formatter};
 use std::path::Path;
 
 use reqwest;
+
 use reqwest::StatusCode;
 use scraper::{Html, Selector};
 
@@ -16,12 +18,34 @@ pub struct TenkiJpForecast {
 pub struct Forecast {
     place: String,
     date_time: String,
-    pub weather: String,
+    weather: String,
     weather_icon_stem: String,
     high_temp: i16,
-    high_temp_diff: i16,
+    high_temp_diff: TempDiff,
     low_temp: i16,
-    low_temp_diff: i16,
+    low_temp_diff: TempDiff,
+}
+
+#[derive(Debug)]
+struct TempDiff {
+    temp_diff: i16,
+}
+
+impl Display for TempDiff {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.temp_diff.is_positive() {
+            true => write!(f, "+{}", self.temp_diff),
+            false => write!(f, "{}", self.temp_diff),
+        }
+    }
+}
+
+impl TempDiff {
+    pub fn new(temp_diff: &str) -> Self {
+        Self {
+            temp_diff: temp_diff.parse::<i16>().unwrap(),
+        }
+    }
 }
 
 impl TenkiJpForecast {
@@ -47,20 +71,20 @@ impl TenkiJpForecast {
                 .get_text("dd.high-temp > .value")
                 .parse::<i16>()
                 .unwrap(),
-            high_temp_diff: self
-                .get_text("dd.high-temp.tempdiff")
-                .replace(TRIM_CHARS.as_ref(), "")
-                .parse::<i16>()
-                .unwrap(),
+            high_temp_diff: TempDiff::new(
+                &self
+                    .get_text("dd.high-temp.tempdiff")
+                    .replace(TRIM_CHARS.as_ref(), ""),
+            ),
             low_temp: self
                 .get_text("dd.low-temp > .value")
                 .parse::<i16>()
                 .unwrap(),
-            low_temp_diff: self
-                .get_text("dd.low-temp.tempdiff")
-                .replace(TRIM_CHARS.as_ref(), "")
-                .parse::<i16>()
-                .unwrap(),
+            low_temp_diff: TempDiff::new(
+                &self
+                    .get_text("dd.low-temp.tempdiff")
+                    .replace(TRIM_CHARS.as_ref(), ""),
+            ),
         })
     }
 
@@ -103,6 +127,21 @@ impl TenkiJpForecast {
             .to_str()
             .unwrap()
             .to_string()
+    }
+}
+
+impl Forecast {
+    pub fn build_text(&self) -> String {
+        format!(
+            "{}: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
+            self.place,
+            self.weather,
+            self.high_temp,
+            self.high_temp_diff,
+            self.low_temp,
+            self.low_temp_diff,
+            self.date_time
+        )
     }
 }
 
@@ -149,5 +188,24 @@ mod tests {
         let result = TenkiJpForecast::get_stem(str);
 
         assert_eq!(result, "12_n".to_string());
+    }
+
+    #[test]
+    fn test_build_text() {
+        let forecast = Forecast {
+            place: "場所".to_string(),
+            date_time: "日時".to_string(),
+            weather: "晴".to_string(),
+            weather_icon_stem: "01".to_string(),
+            high_temp: 10,
+            high_temp_diff: TempDiff::new("3"),
+            low_temp: 0,
+            low_temp_diff: TempDiff::new("-5"),
+        };
+
+        assert_eq!(
+            forecast.build_text(),
+            "場所: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
+        );
     }
 }
