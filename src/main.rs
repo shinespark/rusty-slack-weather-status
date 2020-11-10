@@ -32,18 +32,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .get_matches();
 
     let tenki_jp_url = matches.value_of("URL").unwrap();
-    info!("tenki.jp URL: {}", tenki_jp_url);
-
     let tenki_jp_forecast = TenkiJpForecast::get(tenki_jp_url).await?;
     let forecast = tenki_jp_forecast.parse()?;
     info!("{:?}", forecast);
 
     let token = matches.value_of("SLACK_TOKEN").unwrap();
     let slack_request = SlackRequest::new(token);
-    let (slack_result, res_body) = slack_request
-        .update_status(":sunny:", &forecast.weather)
+    let (_status_code, res) = slack_request
+        .update_status(":sunny:", &forecast.build_text())
         .await?;
-    info!("{:?}", slack_result);
-    info!("{:?}", res_body);
+    info!("{:?}", &forecast.build_text());
+    info!("{:?}", res);
     Ok(())
 }

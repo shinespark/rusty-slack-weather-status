@@ -35,8 +35,8 @@ impl SlackRequest {
             .send()
             .await?;
 
-        let status = res.status();
+        let status_code = res.status();
         let body = res.text().await?;
-        Ok((status, body))
+        Ok((status_code, body))
     }
 }
