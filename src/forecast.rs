@@ -1,10 +1,10 @@
 use std::fmt::{self, Display, Formatter};
 use std::path::Path;
 
-use reqwest;
-
 use reqwest::StatusCode;
 use scraper::{Html, Selector};
+
+use crate::embed::EMOJI_MAP;
 
 const TRIM_CHARS: [char; 3] = ['[', '+', ']'];
 
@@ -131,6 +131,11 @@ impl TenkiJpForecast {
 }
 
 impl Forecast {
+    pub fn build_emoji(&self) -> String {
+        let weather_icon_num = self.weather_icon_stem.replace("_n", "");
+        EMOJI_MAP.get(&weather_icon_num).unwrap().to_string()
+    }
+
     pub fn build_text(&self) -> String {
         format!(
             "{}: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",

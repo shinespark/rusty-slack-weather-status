@@ -39,9 +39,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = matches.value_of("SLACK_TOKEN").unwrap();
     let slack_request = SlackRequest::new(token);
     let (_status_code, res) = slack_request
-        .update_status(":sunny:", &forecast.build_text())
+        .update_status(&forecast.build_emoji(), &forecast.build_text())
         .await?;
-    info!("{:?}", &forecast.build_text());
+    info!(
+        "{:?}, {:?}",
+        &forecast.build_emoji(),
+        &forecast.build_text()
+    );
     info!("{:?}", res);
     Ok(())
 }
