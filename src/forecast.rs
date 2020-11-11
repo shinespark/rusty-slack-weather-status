@@ -18,6 +18,9 @@ pub struct TenkiJpForecast {
 pub struct Forecast {
     place: String,
     date_time: String,
+    advisory: Option<String>,
+    warning: Option<String>,
+    emergency_warning: Option<String>,
     weather: String,
     weather_icon_stem: String,
     high_temp: i16,
@@ -65,6 +68,9 @@ impl TenkiJpForecast {
                 .split("発表")
                 .collect::<Vec<_>>()[0]
                 .to_string(),
+            advisory: self.get_advisory(".alert-entry"),
+            warning: None,           // Unimplemented.
+            emergency_warning: None, // Unimplemented.
             weather: self.get_text(".weather-telop"),
             weather_icon_stem: self.get_weather_icon_stem(".weather-icon > img ", "src"),
             high_temp: self
@@ -103,6 +109,14 @@ impl TenkiJpForecast {
             .into()
     }
 
+    fn get_advisory(&self, selector: &str) -> Option<String> {
+        let text = self.get_text(selector);
+        match text.len() {
+            0 => None,
+            _ => Some(text),
+        }
+    }
+
     fn get_weather_icon_stem(&self, selector: &str, attr: &str) -> String {
         let weather_icon_path = self.get_attr(selector, attr).unwrap_or_default();
         Self::get_stem(&weather_icon_path)
@@ -137,16 +151,29 @@ impl Forecast {
     }
 
     pub fn build_text(&self) -> String {
-        format!(
-            "{}: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
-            self.place,
-            self.weather,
-            self.high_temp,
-            self.high_temp_diff,
-            self.low_temp,
-            self.low_temp_diff,
-            self.date_time
-        )
+        match self.advisory.is_some() {
+            true => format!(
+                "{}: {} :warning: 注意報: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
+                self.place,
+                self.weather,
+                self.advisory.as_ref().unwrap(),
+                self.high_temp,
+                self.high_temp_diff,
+                self.low_temp,
+                self.low_temp_diff,
+                self.date_time
+            ),
+            false => format!(
+                "{}: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
+                self.place,
+                self.weather,
+                self.high_temp,
+                self.high_temp_diff,
+                self.low_temp,
+                self.low_temp_diff,
+                self.date_time
+            ),
+        }
     }
 }
 
@@ -200,6 +227,9 @@ mod tests {
         let forecast = Forecast {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
+            advisory: None,
+            warning: None,
+            emergency_warning: None,
             weather: "晴".to_string(),
             weather_icon_stem: "01".to_string(),
             high_temp: 10,
@@ -211,6 +241,25 @@ mod tests {
         assert_eq!(
             forecast.build_text(),
             "場所: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
+        );
+
+        let forecast = Forecast {
+            place: "場所".to_string(),
+            date_time: "日時".to_string(),
+            advisory: Some("乾燥".to_string()),
+            warning: None,
+            emergency_warning: None,
+            weather: "晴".to_string(),
+            weather_icon_stem: "01".to_string(),
+            high_temp: 10,
+            high_temp_diff: TempDiff::new("3"),
+            low_temp: 0,
+            low_temp_diff: TempDiff::new("-5"),
+        };
+
+        assert_eq!(
+            forecast.build_text(),
+            "場所: 晴 :warning: 注意報: 乾燥 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
         );
     }
 }
