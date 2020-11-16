@@ -96,17 +96,16 @@ impl TenkiJpForecast {
 
     fn get_text(&self, selector: &str) -> String {
         let selector = Selector::parse(selector).unwrap();
-
-        self.html
-            .select(&selector)
-            .next()
-            .unwrap()
-            .text()
-            .collect::<Vec<_>>()
-            .into_iter()
-            .collect::<String>()
-            .trim()
-            .into()
+        match self.html.select(&selector).next() {
+            Some(x) => x
+                .text()
+                .collect::<Vec<_>>()
+                .into_iter()
+                .collect::<String>()
+                .trim()
+                .into(),
+            None => "".to_string(),
+        }
     }
 
     fn get_advisory(&self, selector: &str) -> Option<String> {
