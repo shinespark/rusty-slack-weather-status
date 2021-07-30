@@ -145,6 +145,13 @@ impl TenkiJpForecast {
 
 impl Forecast {
     pub fn build_emoji(&self) -> String {
+        match self.advisory.is_some() {
+            true => ":warning:".to_string(),
+            false => self.build_weather_emoji(),
+        }
+    }
+
+    pub fn build_weather_emoji(&self) -> String {
         let weather_icon_num = self.weather_icon_stem.replace("_n", "");
         EMOJI_MAP.get(&weather_icon_num).unwrap().to_string()
     }
@@ -152,10 +159,11 @@ impl Forecast {
     pub fn build_text(&self) -> String {
         match self.advisory.is_some() {
             true => format!(
-                "{}: {} :warning: 注意報: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
+                "{}: 注意報: {} {} {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
                 self.place,
-                self.weather,
                 self.advisory.as_ref().unwrap(),
+                self.build_weather_emoji(),
+                self.weather,
                 self.high_temp,
                 self.high_temp_diff,
                 self.low_temp,
@@ -222,6 +230,41 @@ mod tests {
     }
 
     #[test]
+    fn test_build_emoji() {
+        let forecast = Forecast {
+            place: "場所".to_string(),
+            date_time: "日時".to_string(),
+            advisory: None,
+            warning: None,
+            emergency_warning: None,
+            weather: "晴".to_string(),
+            weather_icon_stem: "01".to_string(),
+            high_temp: 10,
+            high_temp_diff: TempDiff::new("3"),
+            low_temp: 0,
+            low_temp_diff: TempDiff::new("-5"),
+        };
+
+        assert_eq!(forecast.build_emoji(), ":sunny:");
+
+        let forecast = Forecast {
+            place: "場所".to_string(),
+            date_time: "日時".to_string(),
+            advisory: Some("乾燥".to_string()),
+            warning: None,
+            emergency_warning: None,
+            weather: "晴".to_string(),
+            weather_icon_stem: "01".to_string(),
+            high_temp: 10,
+            high_temp_diff: TempDiff::new("3"),
+            low_temp: 0,
+            low_temp_diff: TempDiff::new("-5"),
+        };
+
+        assert_eq!(forecast.build_emoji(), ":warning:");
+    }
+
+    #[test]
     fn test_build_text() {
         let forecast = Forecast {
             place: "場所".to_string(),
@@ -258,7 +301,7 @@ mod tests {
 
         assert_eq!(
             forecast.build_text(),
-            "場所: 晴 :warning: 注意報: 乾燥 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
+            "場所: 注意報: 乾燥 :sunny: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
         );
     }
 }
