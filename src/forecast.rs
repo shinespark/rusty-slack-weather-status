@@ -159,7 +159,7 @@ impl Forecast {
     pub fn build_text(&self) -> String {
         match self.advisory.is_some() {
             true => format!(
-                "{}: 注意報: {} {} {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
+                "{}: {}注意報 {}: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
                 self.place,
                 self.advisory.as_ref().unwrap(),
                 self.build_weather_emoji(),
@@ -301,7 +301,7 @@ mod tests {
 
         assert_eq!(
             forecast.build_text(),
-            "場所: 注意報: 乾燥 :sunny: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
+            "場所: 乾燥注意報 :sunny:: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
         );
     }
 }
