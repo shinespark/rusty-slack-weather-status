@@ -19,8 +19,9 @@ pub struct Forecast {
     place: String,
     date_time: String,
     advisory: Option<String>,
-    warning: Option<String>,
-    emergency_warning: Option<String>,
+    special_warnings: Option<Vec<String>>, // 特別警報, Unimplemented
+    warnings: Option<Vec<String>>,         // 警報
+    alerts: Option<Vec<String>>,           // 注意報
     weather: String,
     weather_icon_name: String,
     high_temp: i16,
@@ -69,8 +70,9 @@ impl TenkiJpForecast {
                 .collect::<Vec<_>>()[0]
                 .to_string(),
             advisory: self.get_advisory(".alert-entry"),
-            warning: None,           // Unimplemented.
-            emergency_warning: None, // Unimplemented.
+            special_warnings: None, // Unimplemented
+            warnings: self.get_texts(".warn-entry"),
+            alerts: self.get_texts(".alert-entry"),
             weather: self.get_text(".weather-telop"),
             weather_icon_name: self.get_weather_icon_name(".weather-icon > img ", "src"),
             high_temp: self
@@ -178,29 +180,51 @@ impl Forecast {
     }
 
     pub fn build_text(&self) -> String {
-        match self.advisory.is_some() {
+        let advisory_text = match self.warnings.is_some() || self.alerts.is_some() {
+            true => {
+                let warnings = self.warnings.as_ref().map(|x| {
+                    x.iter()
+                        .map(|warning| format!("{}警報", warning))
+                        .collect::<Vec<_>>()
+                        .join(",")
+                });
+
+                let alerts = self.alerts.as_ref().map(|x| {
+                    x.iter()
+                        .map(|alert| format!("{}注意報", alert))
+                        .collect::<Vec<_>>()
+                        .join(",")
+                });
+
+                let texts: String = vec![warnings, alerts]
+                    .into_iter()
+                    .filter_map(|x| x)
+                    .collect::<Vec<_>>()
+                    .join(",");
+
+                Some(texts)
+            }
+            false => None,
+        };
+        let weather_text = format!(
+            "{w} 最高: {ht}℃[{htd}] 最低: {lt}℃[{ltd}] 発表: {dt}",
+            w = self.weather,
+            ht = self.high_temp,
+            htd = self.high_temp_diff,
+            lt = self.low_temp,
+            ltd = self.low_temp_diff,
+            dt = self.date_time
+        );
+
+        match advisory_text.is_some() {
             true => format!(
-                "{}: {}注意報 {}: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
+                "{}: {} {}: {}",
                 self.place,
-                self.advisory.as_ref().unwrap(),
+                advisory_text.unwrap(),
                 self.build_weather_emoji(),
-                self.weather,
-                self.high_temp,
-                self.high_temp_diff,
-                self.low_temp,
-                self.low_temp_diff,
-                self.date_time
+                weather_text
             ),
-            false => format!(
-                "{}: {} 最高: {}℃[{}] 最低: {}℃[{}] 発表: {}",
-                self.place,
-                self.weather,
-                self.high_temp,
-                self.high_temp_diff,
-                self.low_temp,
-                self.low_temp_diff,
-                self.date_time
-            ),
+            false => format!("{}: {}", self.place, weather_text),
         }
     }
 }
@@ -278,8 +302,9 @@ mod tests {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
             advisory: None,
-            warning: None,
-            emergency_warning: None,
+            special_warnings: None,
+            warnings: None,
+            alerts: None,
             weather: "晴".to_string(),
             weather_icon_name: "01".to_string(),
             high_temp: 10,
@@ -294,8 +319,9 @@ mod tests {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
             advisory: Some("乾燥".to_string()),
-            warning: None,
-            emergency_warning: None,
+            special_warnings: None,
+            warnings: None,
+            alerts: None,
             weather: "晴".to_string(),
             weather_icon_name: "01".to_string(),
             high_temp: 10,
@@ -313,8 +339,9 @@ mod tests {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
             advisory: None,
-            warning: None,
-            emergency_warning: None,
+            special_warnings: None,
+            warnings: None,
+            alerts: None,
             weather: "晴".to_string(),
             weather_icon_name: "01".to_string(),
             high_temp: 10,
@@ -331,9 +358,10 @@ mod tests {
         let forecast = Forecast {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
-            advisory: Some("乾燥".to_string()),
-            warning: None,
-            emergency_warning: None,
+            advisory: Some("洪水".to_string()),
+            special_warnings: None,
+            warnings: None,
+            alerts: Some(vec!["洪水".to_string(), "雷".to_string()]),
             weather: "晴".to_string(),
             weather_icon_name: "01".to_string(),
             high_temp: 10,
@@ -344,7 +372,27 @@ mod tests {
 
         assert_eq!(
             forecast.build_text(),
-            "場所: 乾燥注意報 :sunny:: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
+            "場所: 洪水注意報,雷注意報 :sunny:: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
+        );
+
+        let forecast = Forecast {
+            place: "場所".to_string(),
+            date_time: "日時".to_string(),
+            advisory: Some("洪水".to_string()),
+            special_warnings: None,
+            warnings: Some(vec!["大雨".to_string()]),
+            alerts: Some(vec!["洪水".to_string(), "雷".to_string()]),
+            weather: "晴".to_string(),
+            weather_icon_name: "01".to_string(),
+            high_temp: 10,
+            high_temp_diff: TempDiff::new("3"),
+            low_temp: 0,
+            low_temp_diff: TempDiff::new("-5"),
+        };
+
+        assert_eq!(
+            forecast.build_text(),
+            "場所: 大雨警報,洪水注意報,雷注意報 :sunny:: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
         );
     }
 }
