@@ -108,6 +108,21 @@ impl TenkiJpForecast {
         }
     }
 
+    fn get_texts(&self, selector: &str) -> Vec<String> {
+        let selector = Selector::parse(selector).unwrap();
+        self.html
+            .select(&selector)
+            .map(|x| {
+                x.text()
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .collect::<String>()
+                    .trim()
+                    .into()
+            })
+            .collect()
+    }
+
     fn get_advisory(&self, selector: &str) -> Option<String> {
         let text = self.get_text(selector);
         match text.len() {
@@ -199,6 +214,18 @@ mod tests {
         };
 
         assert_eq!(tenki_jp_forecast.get_text("h2"), "h2要素");
+    }
+
+    #[test]
+    fn test_get_texts() {
+        let tenki_jp_forecast = TenkiJpForecast {
+            status: Default::default(),
+            html: Html::parse_document(
+                "<html><span class='alert-entry'>洪水</span><span class='alert-entry'>雷</span></html>",
+            ),
+        };
+
+        assert_eq!(tenki_jp_forecast.get_texts(".alert-entry"), ["洪水", "雷"]);
     }
 
     #[test]
