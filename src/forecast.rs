@@ -108,9 +108,10 @@ impl TenkiJpForecast {
         }
     }
 
-    fn get_texts(&self, selector: &str) -> Vec<String> {
+    fn get_texts(&self, selector: &str) -> Option<Vec<String>> {
         let selector = Selector::parse(selector).unwrap();
-        self.html
+        let texts = self
+            .html
             .select(&selector)
             .map(|x| {
                 x.text()
@@ -120,7 +121,12 @@ impl TenkiJpForecast {
                     .trim()
                     .into()
             })
-            .collect()
+            .collect::<Vec<_>>();
+
+        match texts.len() {
+            0 => None,
+            _ => Some(texts),
+        }
     }
 
     fn get_advisory(&self, selector: &str) -> Option<String> {
@@ -225,7 +231,17 @@ mod tests {
             ),
         };
 
-        assert_eq!(tenki_jp_forecast.get_texts(".alert-entry"), ["洪水", "雷"]);
+        assert_eq!(
+            tenki_jp_forecast.get_texts(".alert-entry"),
+            Some(vec!["洪水".to_string(), "雷".to_string()])
+        );
+
+        let tenki_jp_forecast = TenkiJpForecast {
+            status: Default::default(),
+            html: Html::parse_document("<html></html>"),
+        };
+
+        assert_eq!(tenki_jp_forecast.get_texts(".alert-entry"), None);
     }
 
     #[test]
