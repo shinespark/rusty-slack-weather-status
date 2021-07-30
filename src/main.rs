@@ -11,7 +11,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
     let matches = App::new("Rusty Slack Weather Status")
-        .version("0.9")
+        .version("0.99")
         .about("Set the weather on your Slack status")
         .arg(
             Arg::with_name("URL")
@@ -20,6 +20,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .help("Sets a tenki.jp url. e.g.) https://tenki.jp/forecast/3/16/4410/13113")
                 .required(true)
                 .takes_value(true))
+        .arg(
+            Arg::with_name("DRY RUN")
+                .short("d")
+                .long("dry")
+                .help("Don't send to the Slack.")
+        )
         .arg(
             Arg::with_name("SLACK_TOKEN")
                 .short("t")
@@ -35,17 +41,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tenki_jp_forecast = TenkiJpForecast::get(tenki_jp_url).await?;
     let forecast = tenki_jp_forecast.parse()?;
     info!("{:?}", forecast);
-
-    let token = matches.value_of("SLACK_TOKEN").unwrap();
-    let slack_request = SlackRequest::new(token);
-    let (_status_code, res) = slack_request
-        .update_status(&forecast.build_emoji(), &forecast.build_text())
-        .await?;
     info!(
         "{:?}, {:?}",
         &forecast.build_emoji(),
         &forecast.build_text()
     );
-    info!("{:?}", res);
+
+    let is_dry_run = matches.is_present("DRY RUN");
+    if !is_dry_run {
+        let token = matches.value_of("SLACK_TOKEN").unwrap();
+        let slack_request = SlackRequest::new(token);
+        let (_status_code, res) = slack_request
+            .update_status(&forecast.build_emoji(), &forecast.build_text())
+            .await?;
+        info!("{:?}", res);
+    }
+
     Ok(())
 }
