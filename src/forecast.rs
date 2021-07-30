@@ -22,7 +22,7 @@ pub struct Forecast {
     warning: Option<String>,
     emergency_warning: Option<String>,
     weather: String,
-    weather_icon_stem: String,
+    weather_icon_name: String,
     high_temp: i16,
     high_temp_diff: TempDiff,
     low_temp: i16,
@@ -72,7 +72,7 @@ impl TenkiJpForecast {
             warning: None,           // Unimplemented.
             emergency_warning: None, // Unimplemented.
             weather: self.get_text(".weather-telop"),
-            weather_icon_stem: self.get_weather_icon_stem(".weather-icon > img ", "src"),
+            weather_icon_name: self.get_weather_icon_name(".weather-icon > img ", "src"),
             high_temp: self
                 .get_text("dd.high-temp > .value")
                 .parse::<i16>()
@@ -131,9 +131,9 @@ impl TenkiJpForecast {
         }
     }
 
-    fn get_weather_icon_stem(&self, selector: &str, attr: &str) -> String {
+    fn get_weather_icon_name(&self, selector: &str, attr: &str) -> String {
         let weather_icon_path = self.get_attr(selector, attr).unwrap_or_default();
-        Self::get_stem(&weather_icon_path)
+        Self::get_file_stem(&weather_icon_path)
     }
 
     fn get_attr(&self, selector: &str, attr: &str) -> Option<String> {
@@ -148,7 +148,7 @@ impl TenkiJpForecast {
             .map(|x| x.into())
     }
 
-    fn get_stem(path: &str) -> String {
+    fn get_file_stem(path: &str) -> String {
         Path::new(path)
             .file_stem()
             .unwrap()
@@ -167,7 +167,7 @@ impl Forecast {
     }
 
     pub fn build_weather_emoji(&self) -> String {
-        let weather_icon_num = self.weather_icon_stem.replace("_n", "");
+        let weather_icon_num = self.weather_icon_name.replace("_n", "");
         EMOJI_MAP.get(&weather_icon_num).unwrap().to_string()
     }
 
@@ -244,14 +244,14 @@ mod tests {
     }
 
     #[test]
-    fn test_get_stem() {
+    fn test_get_file_stem() {
         let str = "https://static.tenki.jp/images/icon/forecast-days-weather/12.png";
-        let result = TenkiJpForecast::get_stem(str);
+        let result = TenkiJpForecast::get_file_stem(str);
 
         assert_eq!(result, "12".to_string());
 
         let str = "https://static.tenki.jp/images/icon/forecast-days-weather/12_n.png";
-        let result = TenkiJpForecast::get_stem(str);
+        let result = TenkiJpForecast::get_file_stem(str);
 
         assert_eq!(result, "12_n".to_string());
     }
@@ -265,7 +265,7 @@ mod tests {
             warning: None,
             emergency_warning: None,
             weather: "晴".to_string(),
-            weather_icon_stem: "01".to_string(),
+            weather_icon_name: "01".to_string(),
             high_temp: 10,
             high_temp_diff: TempDiff::new("3"),
             low_temp: 0,
@@ -281,7 +281,7 @@ mod tests {
             warning: None,
             emergency_warning: None,
             weather: "晴".to_string(),
-            weather_icon_stem: "01".to_string(),
+            weather_icon_name: "01".to_string(),
             high_temp: 10,
             high_temp_diff: TempDiff::new("3"),
             low_temp: 0,
@@ -300,7 +300,7 @@ mod tests {
             warning: None,
             emergency_warning: None,
             weather: "晴".to_string(),
-            weather_icon_stem: "01".to_string(),
+            weather_icon_name: "01".to_string(),
             high_temp: 10,
             high_temp_diff: TempDiff::new("3"),
             low_temp: 0,
@@ -319,7 +319,7 @@ mod tests {
             warning: None,
             emergency_warning: None,
             weather: "晴".to_string(),
-            weather_icon_stem: "01".to_string(),
+            weather_icon_name: "01".to_string(),
             high_temp: 10,
             high_temp_diff: TempDiff::new("3"),
             low_temp: 0,
