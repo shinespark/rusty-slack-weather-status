@@ -11,6 +11,9 @@ cargo run -- -u <tenki.jp URL: e.g. https://tenki.jp/forecast/3/16/4410/13120> -
 or
 
 ```
+cargo build --release
+
+crontab -e
 */10 * * * * /<repository_path>/git/rusty-slack-weather-status/target/release/rusty-slack-weather-status -u https://tenki.jp/forecast/3/16/4410/13120 -t <Slack Web API token e.g. xoxp-...> >/dev/null 2>&1
 ```
 
