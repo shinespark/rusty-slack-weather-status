@@ -6,6 +6,8 @@ use scraper::{Html, Selector};
 
 use crate::embed::EMOJI_MAP;
 
+const WARNING_EMOJI: &str = ":rotating_light:";
+const ALERT_EMOJI: &str = ":warning:";
 const TRIM_CHARS: [char; 3] = ['[', '+', ']'];
 
 #[derive(Debug)]
@@ -18,7 +20,6 @@ pub struct TenkiJpForecast {
 pub struct Forecast {
     place: String,
     date_time: String,
-    advisory: Option<String>,
     special_warnings: Option<Vec<String>>, // 特別警報, Unimplemented
     warnings: Option<Vec<String>>,         // 警報
     alerts: Option<Vec<String>>,           // 注意報
@@ -69,7 +70,6 @@ impl TenkiJpForecast {
                 .split("発表")
                 .collect::<Vec<_>>()[0]
                 .to_string(),
-            advisory: self.get_advisory(".alert-entry"),
             special_warnings: None, // Unimplemented
             warnings: self.get_texts(".warn-entry"),
             alerts: self.get_texts(".alert-entry"),
@@ -131,14 +131,6 @@ impl TenkiJpForecast {
         }
     }
 
-    fn get_advisory(&self, selector: &str) -> Option<String> {
-        let text = self.get_text(selector);
-        match text.len() {
-            0 => None,
-            _ => Some(text),
-        }
-    }
-
     fn get_weather_icon_name(&self, selector: &str, attr: &str) -> String {
         let weather_icon_path = self.get_attr(selector, attr).unwrap_or_default();
         Self::get_file_stem(&weather_icon_path)
@@ -168,10 +160,15 @@ impl TenkiJpForecast {
 
 impl Forecast {
     pub fn build_emoji(&self) -> String {
-        match self.advisory.is_some() {
-            true => ":warning:".to_string(),
-            false => self.build_weather_emoji(),
+        if self.warnings.is_some() {
+            return WARNING_EMOJI.to_string();
         }
+
+        if self.alerts.is_some() {
+            return ALERT_EMOJI.to_string();
+        }
+
+        self.build_weather_emoji()
     }
 
     pub fn build_weather_emoji(&self) -> String {
@@ -301,7 +298,6 @@ mod tests {
         let forecast = Forecast {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
-            advisory: None,
             special_warnings: None,
             warnings: None,
             alerts: None,
@@ -318,10 +314,9 @@ mod tests {
         let forecast = Forecast {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
-            advisory: Some("乾燥".to_string()),
             special_warnings: None,
-            warnings: None,
-            alerts: None,
+            warnings: Some(vec!["大雨".to_string()]),
+            alerts: Some(vec!["洪水".to_string(), "雷".to_string()]),
             weather: "晴".to_string(),
             weather_icon_name: "01".to_string(),
             high_temp: 10,
@@ -330,7 +325,23 @@ mod tests {
             low_temp_diff: TempDiff::new("-5"),
         };
 
-        assert_eq!(forecast.build_emoji(), ":warning:");
+        assert_eq!(forecast.build_emoji(), WARNING_EMOJI);
+
+        let forecast = Forecast {
+            place: "場所".to_string(),
+            date_time: "日時".to_string(),
+            special_warnings: None,
+            warnings: None,
+            alerts: Some(vec!["洪水".to_string(), "雷".to_string()]),
+            weather: "晴".to_string(),
+            weather_icon_name: "01".to_string(),
+            high_temp: 10,
+            high_temp_diff: TempDiff::new("3"),
+            low_temp: 0,
+            low_temp_diff: TempDiff::new("-5"),
+        };
+
+        assert_eq!(forecast.build_emoji(), ALERT_EMOJI);
     }
 
     #[test]
@@ -338,7 +349,6 @@ mod tests {
         let forecast = Forecast {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
-            advisory: None,
             special_warnings: None,
             warnings: None,
             alerts: None,
@@ -358,7 +368,6 @@ mod tests {
         let forecast = Forecast {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
-            advisory: Some("洪水".to_string()),
             special_warnings: None,
             warnings: None,
             alerts: Some(vec!["洪水".to_string(), "雷".to_string()]),
@@ -378,7 +387,25 @@ mod tests {
         let forecast = Forecast {
             place: "場所".to_string(),
             date_time: "日時".to_string(),
-            advisory: Some("洪水".to_string()),
+            special_warnings: None,
+            warnings: Some(vec!["大雨".to_string()]),
+            alerts: None,
+            weather: "晴".to_string(),
+            weather_icon_name: "01".to_string(),
+            high_temp: 10,
+            high_temp_diff: TempDiff::new("3"),
+            low_temp: 0,
+            low_temp_diff: TempDiff::new("-5"),
+        };
+
+        assert_eq!(
+            forecast.build_text(),
+            "場所: 大雨警報 :sunny:: 晴 最高: 10℃[+3] 最低: 0℃[-5] 発表: 日時"
+        );
+
+        let forecast = Forecast {
+            place: "場所".to_string(),
+            date_time: "日時".to_string(),
             special_warnings: None,
             warnings: Some(vec!["大雨".to_string()]),
             alerts: Some(vec!["洪水".to_string(), "雷".to_string()]),
