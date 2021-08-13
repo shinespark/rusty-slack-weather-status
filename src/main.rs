@@ -40,21 +40,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tenki_jp_url = matches.value_of("URL").unwrap();
     let tenki_jp_forecast = TenkiJpForecast::get(tenki_jp_url).await?;
     let forecast = tenki_jp_forecast.parse()?;
-    info!("{:?}", forecast);
-    info!(
-        "{:?}, {:?}",
-        &forecast.build_emoji(),
-        &forecast.build_text()
-    );
 
     let is_dry_run = matches.is_present("DRY RUN");
-    if !is_dry_run {
-        let token = matches.value_of("SLACK_TOKEN").unwrap();
-        let slack_request = SlackRequest::new(token);
-        let (_status_code, res) = slack_request
-            .update_status(&forecast.build_emoji(), &forecast.build_text())
-            .await?;
-        info!("{:?}", res);
+    match is_dry_run {
+        true => {
+            println!("{:?}", forecast);
+            println!(
+                "{:?}, {:?}",
+                &forecast.build_emoji(),
+                &forecast.build_text()
+            )
+        }
+        false => {
+            let token = matches.value_of("SLACK_TOKEN").unwrap();
+            let slack_request = SlackRequest::new(token);
+            let (_status_code, res) = slack_request
+                .update_status(&forecast.build_emoji(), &forecast.build_text())
+                .await?;
+            info!("{:?}", res);
+        }
     }
 
     Ok(())
