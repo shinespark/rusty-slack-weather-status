@@ -4,11 +4,8 @@ use std::path::Path;
 use reqwest::StatusCode;
 use scraper::{Html, Selector};
 
-use crate::embed::EMOJI_MAP;
+use crate::embed::{ALERT_EMOJI_MAP, WEATHER_EMOJI_MAP};
 
-const SPECIAL_WARNING_EMOJI: &str = ":mega:";
-const WARNING_EMOJI: &str = ":rotating_light:";
-const ALERT_EMOJI: &str = ":warning:";
 const TRIM_CHARS: [char; 3] = ['[', '+', ']'];
 
 #[derive(Debug)]
@@ -161,24 +158,38 @@ impl TenkiJpForecast {
 
 impl Forecast {
     pub fn build_emoji(&self) -> String {
-        if self.special_warnings.is_some() {
-            return SPECIAL_WARNING_EMOJI.to_string();
+        match self.has_alert_text() {
+            Some(x) => self.build_alert_emoji(x),
+            None => self.build_weather_emoji(),
         }
-
-        if self.warnings.is_some() {
-            return WARNING_EMOJI.to_string();
-        }
-
-        if self.alerts.is_some() {
-            return ALERT_EMOJI.to_string();
-        }
-
-        self.build_weather_emoji()
     }
 
-    pub fn build_weather_emoji(&self) -> String {
+    fn has_alert_text(&self) -> Option<&String> {
+        if let Some(special_warnings) = &self.special_warnings {
+            return special_warnings.first();
+        }
+
+        if let Some(warnings) = &self.warnings {
+            return warnings.first();
+        }
+
+        if let Some(alerts) = &self.alerts {
+            return alerts.first();
+        }
+
+        None
+    }
+
+    fn build_alert_emoji(&self, alert_text: &String) -> String {
+        ALERT_EMOJI_MAP.get(alert_text).unwrap().to_string()
+    }
+
+    fn build_weather_emoji(&self) -> String {
         let weather_icon_num = self.weather_icon_name.replace("_n", "");
-        EMOJI_MAP.get(&weather_icon_num).unwrap().to_string()
+        WEATHER_EMOJI_MAP
+            .get(&weather_icon_num)
+            .unwrap()
+            .to_string()
     }
 
     pub fn build_text(&self) -> String {
@@ -258,26 +269,34 @@ mod tests {
         assert_eq!(tenki_jp_forecast.get_text("h2"), "h2要素");
     }
 
-    #[test]
-    fn test_get_texts() {
-        let tenki_jp_forecast = TenkiJpForecast {
-            status: Default::default(),
-            html: Html::parse_document(
-                "<html><span class='alert-entry'>洪水</span><span class='alert-entry'>雷</span></html>",
-            ),
-        };
+    mod test_get_texts {
+        use super::*;
+        use pretty_assertions::assert_eq;
 
-        assert_eq!(
-            tenki_jp_forecast.get_texts(".alert-entry"),
-            Some(vec!["洪水".to_string(), "雷".to_string()])
-        );
+        #[test]
+        fn found() {
+            let tenki_jp_forecast = TenkiJpForecast {
+                status: Default::default(),
+                html: Html::parse_document(
+                    "<html><span class='alert-entry'>洪水</span><span class='alert-entry'>雷</span></html>",
+                ),
+            };
 
-        let tenki_jp_forecast = TenkiJpForecast {
-            status: Default::default(),
-            html: Html::parse_document("<html></html>"),
-        };
+            assert_eq!(
+                tenki_jp_forecast.get_texts(".alert-entry"),
+                Some(vec!["洪水".to_string(), "雷".to_string()])
+            );
+        }
 
-        assert_eq!(tenki_jp_forecast.get_texts(".alert-entry"), None);
+        #[test]
+        fn not_found() {
+            let tenki_jp_forecast = TenkiJpForecast {
+                status: Default::default(),
+                html: Html::parse_document("<html></html>"),
+            };
+
+            assert_eq!(tenki_jp_forecast.get_texts(".alert-entry"), None);
+        }
     }
 
     #[test]
@@ -295,17 +314,25 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_get_file_stem() {
-        let str = "https://static.tenki.jp/images/icon/forecast-days-weather/12.png";
-        let result = TenkiJpForecast::get_file_stem(str);
+    mod test_get_file_stem {
+        use super::*;
+        use pretty_assertions::assert_eq;
 
-        assert_eq!(result, "12".to_string());
+        #[test]
+        fn daytime() {
+            let str = "https://static.tenki.jp/images/icon/forecast-days-weather/12.png";
+            let result = TenkiJpForecast::get_file_stem(str);
 
-        let str = "https://static.tenki.jp/images/icon/forecast-days-weather/12_n.png";
-        let result = TenkiJpForecast::get_file_stem(str);
+            assert_eq!(result, "12".to_string());
+        }
 
-        assert_eq!(result, "12_n".to_string());
+        #[test]
+        fn night() {
+            let str = "https://static.tenki.jp/images/icon/forecast-days-weather/12_n.png";
+            let result = TenkiJpForecast::get_file_stem(str);
+
+            assert_eq!(result, "12_n".to_string());
+        }
     }
 
     mod test_build_emoji {
@@ -347,7 +374,7 @@ mod tests {
                 low_temp_diff: TempDiff::new("-5"),
             };
 
-            assert_eq!(forecast.build_emoji(), SPECIAL_WARNING_EMOJI);
+            assert_eq!(forecast.build_emoji(), ":rotating_light:");
         }
 
         #[test]
@@ -366,7 +393,7 @@ mod tests {
                 low_temp_diff: TempDiff::new("-5"),
             };
 
-            assert_eq!(forecast.build_emoji(), WARNING_EMOJI);
+            assert_eq!(forecast.build_emoji(), ":rotating_light:");
         }
 
         #[test]
@@ -385,7 +412,7 @@ mod tests {
                 low_temp_diff: TempDiff::new("-5"),
             };
 
-            assert_eq!(forecast.build_emoji(), ALERT_EMOJI);
+            assert_eq!(forecast.build_emoji(), ":ocean:");
         }
     }
 
