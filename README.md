@@ -32,4 +32,4 @@ RUST_LOG=info cargo run -- -u https://tenki.jp/forecast/3/16/4410/13120 -t <Slac
 
 1. Permissions > User Token Scopes > `users.profile:write`
 
-1. See https://api.slack.com/apps/A029YB02KEG/oauth > OAuth Tokens
+3. See OAuth & Permissions > OAuth Tokens
