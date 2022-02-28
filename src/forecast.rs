@@ -374,7 +374,7 @@ mod tests {
                 low_temp_diff: TempDiff::new("-5"),
             };
 
-            assert_eq!(forecast.build_emoji(), ":rotating_light:");
+            assert_eq!(forecast.build_emoji(), ":bucket:");
         }
 
         #[test]
@@ -393,7 +393,7 @@ mod tests {
                 low_temp_diff: TempDiff::new("-5"),
             };
 
-            assert_eq!(forecast.build_emoji(), ":rotating_light:");
+            assert_eq!(forecast.build_emoji(), ":bucket:");
         }
 
         #[test]
