@@ -7,6 +7,7 @@ use scraper::{Html, Selector};
 use crate::embed::{ALERT_EMOJI_MAP, WEATHER_EMOJI_MAP};
 
 const TRIM_CHARS: [char; 3] = ['[', '+', ']'];
+const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
 
 #[derive(Debug)]
 pub struct TenkiJpForecast {
@@ -53,7 +54,8 @@ impl TempDiff {
 
 impl TenkiJpForecast {
     pub async fn get(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let res = reqwest::get(url).await?;
+        let client = reqwest::Client::builder().user_agent(USER_AGENT).build()?;
+        let res = client.get(url).send().await?;
         Ok(Self {
             status: res.status(),
             html: Html::parse_document(&res.text().await?),
