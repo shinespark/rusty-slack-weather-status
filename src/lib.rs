@@ -1,3 +1,3 @@
 pub mod embed;
-pub mod forecast;
+pub mod models;
 pub mod slack;
