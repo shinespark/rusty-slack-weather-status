@@ -3,7 +3,7 @@ extern crate clap;
 extern crate log;
 
 use clap::{App, Arg};
-use rusty_slack_weather_status::forecast::TenkiJpForecast;
+use rusty_slack_weather_status::models::tenki_jp_forecast::TenkiJpForecast;
 use rusty_slack_weather_status::slack::SlackRequest;
 
 #[tokio::main]
