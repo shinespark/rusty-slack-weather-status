@@ -60,28 +60,28 @@ impl Forecast {
             true => {
                 let special_warnings = self.special_warnings.as_ref().map(|x| {
                     x.iter()
-                        .map(|special_warning| format!("{}特別警報", special_warning))
+                        .map(|special_warning| format!("{special_warning}特別警報"))
                         .collect::<Vec<_>>()
                         .join(",")
                 });
 
                 let warnings = self.warnings.as_ref().map(|x| {
                     x.iter()
-                        .map(|warning| format!("{}警報", warning))
+                        .map(|warning| format!("{warning}警報"))
                         .collect::<Vec<_>>()
                         .join(",")
                 });
 
                 let alerts = self.alerts.as_ref().map(|x| {
                     x.iter()
-                        .map(|alert| format!("{}注意報", alert))
+                        .map(|alert| format!("{alert}注意報"))
                         .collect::<Vec<_>>()
                         .join(",")
                 });
 
                 let texts = vec![special_warnings, warnings, alerts]
                     .into_iter()
-                    .filter_map(|x| x)
+                    .flatten()
                     .collect::<Vec<_>>()
                     .join(",");
 

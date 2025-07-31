@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let is_dry_run = matches.is_present("DRY RUN");
     match is_dry_run {
         true => {
-            println!("{:?}", forecast);
+            println!("{forecast:?}");
             println!(
                 "{:?}, {:?}",
                 &forecast.build_emoji(),

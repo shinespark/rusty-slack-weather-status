@@ -11,7 +11,7 @@ pub struct SlackRequest {
 impl SlackRequest {
     pub fn new(token: &str) -> Self {
         Self {
-            token: format!("Bearer {}", token),
+            token: format!("Bearer {token}"),
         }
     }
 

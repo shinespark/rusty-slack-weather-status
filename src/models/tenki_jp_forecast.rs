@@ -10,7 +10,7 @@ const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleW
 
 #[derive(Debug)]
 pub struct TenkiJpForecast {
-    status: StatusCode,
+    _status: StatusCode,
     html: Html,
 }
 
@@ -19,7 +19,7 @@ impl TenkiJpForecast {
         let client = reqwest::Client::builder().user_agent(USER_AGENT).build()?;
         let res = client.get(url).send().await?;
         Ok(Self {
-            status: res.status(),
+            _status: res.status(),
             html: Html::parse_document(&res.text().await?),
         })
     }
@@ -104,7 +104,7 @@ impl TenkiJpForecast {
         self.html
             .select(&selector)
             .next()
-            .unwrap() // ここで失敗した模様
+            .unwrap()
             .value()
             .attr(attr)
             .map(|x| x.into())
@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn test_get_text() {
         let tenki_jp_forecast = TenkiJpForecast {
-            status: Default::default(),
+            _status: Default::default(),
             html: Html::parse_document(
                 "<html><h1>h1要素</h1><h2>h2要素</h2><h3>h3要素</h3></html>",
             ),
@@ -144,7 +144,7 @@ mod tests {
         #[test]
         fn found() {
             let tenki_jp_forecast = TenkiJpForecast {
-                status: Default::default(),
+                _status: Default::default(),
                 html: Html::parse_document(
                     "<html><span class='alert-entry'>洪水</span><span class='alert-entry'>雷</span></html>",
                 ),
@@ -159,7 +159,7 @@ mod tests {
         #[test]
         fn not_found() {
             let tenki_jp_forecast = TenkiJpForecast {
-                status: Default::default(),
+                _status: Default::default(),
                 html: Html::parse_document("<html></html>"),
             };
 
@@ -170,7 +170,7 @@ mod tests {
     #[test]
     fn test_get_attr() {
         let tenki_jp_forecast = TenkiJpForecast {
-            status: Default::default(),
+            _status: Default::default(),
             html: Html::parse_document(
                 "<html><img src='https://static.tenki.jp/images/icon/forecast-days-weather/12.png'></html>",
             ),
