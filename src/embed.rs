@@ -18,13 +18,13 @@ lazy_static! {
 
 fn init_alert_emoji_map() -> HashMap<String, String> {
     let file = Embed::get(ALERT_EMOJI_MAP_TOML).expect("alert_emoji_map not found.");
-    let raw = from_utf8(file.as_ref()).expect("alert_emoji_map couldn't open.");
+    let raw = from_utf8(file.data.as_ref()).expect("alert_emoji_map couldn't open.");
     toml::from_str(raw).expect("alert_emoji_map couldn't parse.")
 }
 
 fn init_weather_emoji_map() -> HashMap<String, String> {
     let file = Embed::get(WEATHER_EMOJI_MAP_TOML).expect("weather_emoji_map not found.");
-    let raw = from_utf8(file.as_ref()).expect("weather_emoji_map couldn't open.");
+    let raw = from_utf8(file.data.as_ref()).expect("weather_emoji_map couldn't open.");
     toml::from_str(raw).expect("weather_emoji_map couldn't parse.")
 }
 
