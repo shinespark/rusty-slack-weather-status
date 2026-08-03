@@ -13,7 +13,7 @@ reqwest = { version = "0.12", features = ["json"] }
 rust-embed = "8.8.0"
 scraper = "0.27.0"
 tokio = { version = "1.48", features = ["full"] }
-toml = "0.9"
+toml = "1.1"
 
 [dev-dependencies]
 pretty_assertions = "*"
