@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use reqwest::{header, Client, StatusCode};
+use reqwest::{Client, StatusCode, header};
 
 const SET_USERS_PROFILE_API: &str = "https://slack.com/api/users.profile.set";
 
