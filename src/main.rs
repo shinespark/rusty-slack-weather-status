@@ -44,11 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match is_dry_run {
         true => {
             println!("{forecast:?}");
-            println!(
-                "{:?}, {:?}",
-                &forecast.build_emoji(),
-                &forecast.build_text()
-            )
+            println!("{:?}, {:?}", forecast.build_emoji(), forecast.build_text())
         }
         false => {
             let token = matches.get_one::<String>("SLACK_TOKEN").unwrap();
