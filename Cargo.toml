@@ -5,7 +5,7 @@ authors = ["shinespark <shnsprk@gmail.com>"]
 edition = "2024"
 
 [dependencies]
-clap = "~2.27.0"
+clap = "~4.6.5"
 env_logger = "0.11.9"
 lazy_static = "1.4.0"
 log = "0.4"
